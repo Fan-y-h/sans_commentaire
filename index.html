@@ -1,210 +1,13 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sans commentaire</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #f0dbff, #dfb7ff);
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    /* === CARTE = CADRE DE JEU === */
-    .card {
-      position: relative;
-      background: white;
-      padding: 60px 40px;
-      width: 100%;
-      max-width: 500px;
-      min-height: 400px;
-      border-radius: 20px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      overflow: hidden;
-    }
-    h1 {
-      color: #6b10d0;
-      font-size: 24px;
-      margin-bottom: 15px;
-    }
-    p {
-      margin: 12px 0;
-      font-size: 16px;
-    }
-    p strong {
-      font-size: 20px;
-      color: #6b10d0;
-    }
-    /* === ZONE BOUTONS === */
-    .buttons {
-      margin-top: 40px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-    button {
-      padding: 15px 30px;
-      font-size: 16px;
-      border-radius: 25px;
-      border: none;
-      cursor: pointer;
-      transition: transform 0.15s ease;
-      min-width: 200px;
-      touch-action: manipulation;
-    }
-    #yes {
-      background: #6b10d0;
-      color: white;
-      z-index: 2;
-      font-weight: bold;
-    }
-    #yes:hover {
-      background: #5a0db0;
-      transform: scale(1.05);
-    }
-    /* === BOUTON NON : ÉTAT NORMAL === */
-    #no {
-      background: white;
-      color: #ff4d88;
-      border: 2px dashed #ff4d88;
-      font-weight: 500;
-    }
-    /* === ÉTAT FUITE === */
-    #no.flee {
-      position: absolute;
-      z-index: 1;
-      transition: none;
-    }
-
-    /* Message d'aide caché */
-    .hint {
-      margin-top: 20px;
-      font-size: 11px;
-      color: #999;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .hint.show {
-      opacity: 1;
-    }
-
-    /* === RESPONSIVE MOBILE === */
-    @media (max-width: 768px) {
-      .card {
-        padding: 50px 30px;
-        min-height: 450px;
-        border-radius: 15px;
-      }
-      h1 {
-        font-size: 22px;
-      }
-      p {
-        font-size: 15px;
-      }
-      p strong {
-        font-size: 18px;
-      }
-      button {
-        padding: 14px 25px;
-        font-size: 15px;
-        min-width: 180px;
-      }
-      .buttons {
-        gap: 18px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      body {
-        padding: 15px;
-      }
-      .card {
-        padding: 40px 25px;
-        min-height: 420px;
-      }
-      h1 {
-        font-size: 20px;
-      }
-      p {
-        font-size: 14px;
-      }
-      p strong {
-        font-size: 17px;
-      }
-      button {
-        padding: 12px 20px;
-        font-size: 14px;
-        min-width: 160px;
-      }
-      .buttons {
-        margin-top: 35px;
-        gap: 15px;
-      }
-    }
-
-    @media (max-width: 360px) {
-      .card {
-        padding: 35px 20px;
-        min-height: 380px;
-      }
-      h1 {
-        font-size: 18px;
-      }
-      button {
-        min-width: 140px;
-        padding: 11px 18px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="card" id="container">
-    <h1>OK ma belle,</h1>
-    <p>J'ai une question primordiale</p>
-    <p><strong>Un date ?</strong></p>
-    <div class="buttons">
-      <button id="yes">Comment résister... 💕</button>
-      <button id="no">Nop :D</button>
-    </div>
-    <div class="hint" id="hint">Psst... maintiens ton doigt 2 secondes si tu oses vraiment dire non 😏</div>
-  </div>
 <script>
   const noButton = document.getElementById("no");
   const yesButton = document.getElementById("yes");
   const container = document.getElementById("container");
   const hint = document.getElementById("hint");
+  
   let escapeCount = 0;
   let scale = 1;
   let fleeing = false;
-  let touchTimer = null;
-  let touchStartTime = 0;
-  let canClickNo = false;
-  
-  // Empêcher le zoom sur double-tap mobile
-  document.addEventListener('touchstart', function(e) {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', function(e) {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      e.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, false);
+  let safeZone = false;
 
   function isOverlapping(x, y) {
     const noW = noButton.offsetWidth * scale;
@@ -232,25 +35,39 @@
   }
 
   function moveButton(e) {
-    // Si on peut cliquer sur "Non", ne pas le déplacer
-    if (canClickNo) return;
-    
     if (e.type === 'touchstart') {
       e.preventDefault();
     }
+    
+    escapeCount++;
+    
+    // Après 20 tentatives : zone de sécurité en bas à droite
+    if (escapeCount === 20) {
+      safeZone = true;
+      hint.textContent = "💡 Indice : cherche dans le coin en bas à droite...";
+      
+      // Positionner dans le coin
+      const maxX = container.clientWidth - noButton.offsetWidth * scale;
+      const maxY = container.clientHeight - noButton.offsetHeight * scale;
+      
+      if (!fleeing) {
+        fleeing = true;
+        noButton.classList.add("flee");
+      }
+      
+      noButton.style.left = (maxX - 20) + "px";
+      noButton.style.top = (maxY - 20) + "px";
+      return;
+    }
+    
+    // En zone de sécurité, ne plus bouger
+    if (safeZone) return;
     
     if (!fleeing) {
       fleeing = true;
       noButton.classList.add("flee");
     }
-    escapeCount++;
-    
-    // Afficher l'indice après 3 tentatives
-    if (escapeCount >= 3) {
-      hint.classList.add("show");
-    }
-    
-    // Réduction progressive
+
     if (escapeCount >= 5) {
       scale = Math.max(0.5, scale - 0.08);
       noButton.style.transform = `scale(${scale})`;
@@ -270,64 +87,18 @@
     noButton.style.top = y + "px";
   }
 
-  // === GESTION DU TOUCH LONG (2 secondes) ===
-  noButton.addEventListener("touchstart", function(e) {
-    e.preventDefault();
-    touchStartTime = Date.now();
-    
-    // Si on peut déjà cliquer, on sort
-    if (canClickNo) return;
-    
-    // Déplacer le bouton immédiatement
-    moveButton(e);
-    
-    // Démarrer le timer pour le long touch (2 secondes)
-    touchTimer = setTimeout(() => {
-      canClickNo = true;
-      noButton.style.border = "3px solid #4CAF50";
-      noButton.style.color = "#4CAF50";
-      hint.textContent = "Tu peux cliquer maintenant ! (si t'es vraiment sûre...)";
-    }, 2000);
-  }, { passive: false });
-
-  noButton.addEventListener("touchend", function(e) {
-    e.preventDefault();
-    
-    // Annuler le timer si le touch est relâché trop tôt
-    if (touchTimer) {
-      clearTimeout(touchTimer);
-      touchTimer = null;
-    }
-    
-    // Si on peut cliquer, aller à la page
-    if (canClickNo) {
-      window.location.href = "Certes.html";
-    }
-  }, { passive: false });
-
-  noButton.addEventListener("touchmove", function(e) {
-    // Si l'utilisateur bouge son doigt, annuler le timer
-    if (touchTimer) {
-      clearTimeout(touchTimer);
-      touchTimer = null;
-    }
-  }, { passive: false });
-
-  // Gestion desktop (reste inchangée)
   noButton.addEventListener("mouseenter", moveButton);
+  noButton.addEventListener("touchstart", moveButton, { passive: false });
 
   yesButton.addEventListener("click", () => {
     window.location.href = "evidement.html";
   });
 
   noButton.addEventListener("click", (e) => {
-    if (!canClickNo) {
+    if (!safeZone) {
       e.preventDefault();
-      moveButton(e);
     } else {
       window.location.href = "Certes.html";
     }
   });
 </script>
-</body>
-</html>
