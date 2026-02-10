@@ -84,8 +84,8 @@
     }
     /* Bouton tremblant pendant la pause */
     #no.shaking {
-      border: 3px solid #4CAF50 !important;
-      background: #e8f5e9 !important;
+      border: 3px solid #5901fd !important;
+      background: #e5dff1 !important;
       cursor: pointer !important;
       pointer-events: auto !important;
       animation: shake 0.3s ease-in-out infinite;
@@ -152,7 +152,7 @@
 </head>
 <body>
   <div class="card" id="container">
-    <h1>OK,</h1>
+    <h1>OK ,q belle,</h1>
     <p>J'ai une question primordiale</p>
     <p><strong>Un date ?</strong></p>
     <div class="buttons">
@@ -213,7 +213,7 @@
     // À 13 tentatives : afficher l'avertissement
     if (escapeCount === 13 && !warningShown) {
       warningShown = true;
-      hint.textContent = "⚠️ Attention... Le bouton se fatigue...";
+      hint.textContent = "Tu force le bouton se fatigue...";
       hint.classList.add("warning");
     }
     
@@ -221,7 +221,7 @@
     if (escapeCount === 15) {
       isPaused = true;
       hint.classList.remove("warning");
-      hint.textContent = "🎯 MAINTENANT ! 3 secondes pour cliquer !";
+      hint.textContent = "sec pour me briser le coeur";
       noButton.classList.add("shaking");
       
       setTimeout(() => {
