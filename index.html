@@ -60,7 +60,7 @@
       cursor: pointer;
       transition: transform 0.15s ease;
       min-width: 200px;
-      touch-action: manipulation; /* Améliore le touch sur mobile */
+      touch-action: manipulation;
     }
     #yes {
       background: #6b10d0;
@@ -84,6 +84,18 @@
       position: absolute;
       z-index: 1;
       transition: none;
+    }
+
+    /* Message d'aide caché */
+    .hint {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .hint.show {
+      opacity: 1;
     }
 
     /* === RESPONSIVE MOBILE === */
@@ -140,7 +152,6 @@
       }
     }
 
-    /* Pour les très petits écrans */
     @media (max-width: 360px) {
       .card {
         padding: 35px 20px;
@@ -165,14 +176,19 @@
       <button id="yes">Comment résister... 💕</button>
       <button id="no">Nop :D</button>
     </div>
+    <div class="hint" id="hint">Psst... maintiens ton doigt 2 secondes si tu oses vraiment dire non 😏</div>
   </div>
 <script>
   const noButton = document.getElementById("no");
   const yesButton = document.getElementById("yes");
   const container = document.getElementById("container");
+  const hint = document.getElementById("hint");
   let escapeCount = 0;
   let scale = 1;
   let fleeing = false;
+  let touchTimer = null;
+  let touchStartTime = 0;
+  let canClickNo = false;
   
   // Empêcher le zoom sur double-tap mobile
   document.addEventListener('touchstart', function(e) {
@@ -216,7 +232,9 @@
   }
 
   function moveButton(e) {
-    // Empêcher le comportement par défaut sur mobile
+    // Si on peut cliquer sur "Non", ne pas le déplacer
+    if (canClickNo) return;
+    
     if (e.type === 'touchstart') {
       e.preventDefault();
     }
@@ -227,7 +245,12 @@
     }
     escapeCount++;
     
-    // Réduction plus progressive sur mobile
+    // Afficher l'indice après 3 tentatives
+    if (escapeCount >= 3) {
+      hint.classList.add("show");
+    }
+    
+    // Réduction progressive
     if (escapeCount >= 5) {
       scale = Math.max(0.5, scale - 0.08);
       noButton.style.transform = `scale(${scale})`;
@@ -247,19 +270,63 @@
     noButton.style.top = y + "px";
   }
 
-  // Gestion des événements desktop
+  // === GESTION DU TOUCH LONG (2 secondes) ===
+  noButton.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    touchStartTime = Date.now();
+    
+    // Si on peut déjà cliquer, on sort
+    if (canClickNo) return;
+    
+    // Déplacer le bouton immédiatement
+    moveButton(e);
+    
+    // Démarrer le timer pour le long touch (2 secondes)
+    touchTimer = setTimeout(() => {
+      canClickNo = true;
+      noButton.style.border = "3px solid #4CAF50";
+      noButton.style.color = "#4CAF50";
+      hint.textContent = "Tu peux cliquer maintenant ! (si t'es vraiment sûre...)";
+    }, 2000);
+  }, { passive: false });
+
+  noButton.addEventListener("touchend", function(e) {
+    e.preventDefault();
+    
+    // Annuler le timer si le touch est relâché trop tôt
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+    
+    // Si on peut cliquer, aller à la page
+    if (canClickNo) {
+      window.location.href = "Certes.html";
+    }
+  }, { passive: false });
+
+  noButton.addEventListener("touchmove", function(e) {
+    // Si l'utilisateur bouge son doigt, annuler le timer
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+  }, { passive: false });
+
+  // Gestion desktop (reste inchangée)
   noButton.addEventListener("mouseenter", moveButton);
-  
-  // Gestion des événements mobile
-  noButton.addEventListener("touchstart", moveButton, { passive: false });
 
   yesButton.addEventListener("click", () => {
     window.location.href = "evidement.html";
   });
 
   noButton.addEventListener("click", (e) => {
-    e.preventDefault();
-    window.location.href = "Certes.html";
+    if (!canClickNo) {
+      e.preventDefault();
+      moveButton(e);
+    } else {
+      window.location.href = "Certes.html";
+    }
   });
 </script>
 </body>
