@@ -2,115 +2,167 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Refus refusé</title>
+  <title>Sans commentaire</title>
 
   <style>
     body {
-      margin: 0;
       height: 100vh;
-      background: #d6deec;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #f0dbff, #dfb7ff);
       font-family: Arial, sans-serif;
-      overflow: hidden;
-      position: relative;
     }
 
-    .content {
-      position: absolute;
-      top: 20%;
-      width: 100%;
+    /* === CARTE = CADRE DE JEU === */
+    .card {
+      position: relative;
+      background: white;
+      padding: 80px;
+      width: 420px;
+      border-radius: 20px;
       text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      overflow: hidden; /* interdit toute fuite hors du cadre */
     }
 
     h1 {
-      font-size: 48px;
-      margin-bottom: 12px;
+      color: #6b10d0;
+      font-size: 22px;
     }
 
-    h2 {
-      font-size: 26px;
-      margin-bottom: 40px;
+    p {
+      margin: 12px 0;
+    }
+
+    /* === ZONE BOUTONS === */
+    .buttons {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 25px;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 25px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s ease;
     }
 
     #yes {
-      position: absolute;
-      top: 60%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      padding: 14px 26px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      background: #8d8ddf;
+      background: #6b10d0;
       color: white;
-      cursor: pointer;
-      pointer-events: auto;
+      z-index: 2;
     }
 
-    .arrow {
+    /* === BOUTON NON : ÉTAT NORMAL === */
+    #no {
+      background: white;
+      color: #ff4d88;
+      border: 2px dashed #ff4d88;
+    }
+
+    /* === ÉTAT FUITE === */
+    #no.flee {
       position: absolute;
-      top: 70%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
+      z-index: 1;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="content">
-    <h1>C’était sûr que t’essaierais</h1>
-    <h2>Mais c’est refuser.</h2>
+  <div class="card" id="container">
+    <h1>OK ma belle,</h1>
+    <p>J’ai une question primordiale</p>
+    <p><strong>Un date ?</strong></p>
+
+    <div class="buttons">
+      <button id="yes">Comment résister... 💕</button>
+      <button id="no">Nop :D</button>
+    </div>
   </div>
 
-  <button id="yes">J’accepte de mon plein grès</button>
-
-  <!-- vraie flèche -->
-  <svg class="arrow" viewBox="0 0 100 140">
-    <line x1="50" y1="40" x2="50" y2="140" stroke="#15345f" stroke-width="10"/>
-    <polygon points="20,40 80,40 50,0" fill="#15345f"/>
-  </svg>
-
 <script>
-  const button = document.getElementById("yes");
+  const noButton = document.getElementById("no");
+  const yesButton = document.getElementById("yes");
+  const container = document.getElementById("container");
 
-  let btnX = window.innerWidth / 2;
-  let btnY = window.innerHeight * 0.6;
+  let escapeCount = 0;
+  let scale = 1;
+  let fleeing = false;
 
-  let mouseX = btnX;
-  let mouseY = btnY;
+  function isOverlapping(x, y) {
+    const noW = noButton.offsetWidth * scale;
+    const noH = noButton.offsetHeight * scale;
 
-  let follow = false;
+    const noRect = {
+      left: x,
+      right: x + noW,
+      top: y,
+      bottom: y + noH
+    };
 
-  button.style.left = btnX + "px";
-  button.style.top = btnY + "px";
-  button.style.transform = "translate(-50%, -50%)";
+    const yesRect = yesButton.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
 
-  setTimeout(() => {
-    follow = true;
-  }, 3000);
+    const yes = {
+      left: yesRect.left - containerRect.left,
+      right: yesRect.right - containerRect.left,
+      top: yesRect.top - containerRect.top,
+      bottom: yesRect.bottom - containerRect.top
+    };
 
-  document.addEventListener("mousemove", (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-  });
-
-  function animate() {
-    if (follow) {
-      const speed = 0.08;
-      btnX += (mouseX - btnX) * speed;
-      btnY += (mouseY - btnY) * speed;
-
-      button.style.left = btnX + "px";
-      button.style.top = btnY + "px";
-    }
-    requestAnimationFrame(animate);
+    return !(
+      noRect.right < yes.left ||
+      noRect.left > yes.right ||
+      noRect.bottom < yes.top ||
+      noRect.top > yes.bottom
+    );
   }
 
-  animate();
+  function moveButton() {
+    if (!fleeing) {
+      fleeing = true;
+      noButton.classList.add("flee");
+    }
 
-  button.addEventListener("click", () => {
+    escapeCount++;
+
+    if (escapeCount >= 5) {
+      scale = Math.max(0.4, scale - 0.1);
+      noButton.style.transform = `scale(${scale})`;
+    }
+
+    const maxX = container.clientWidth - noButton.offsetWidth * scale;
+    const maxY = container.clientHeight - noButton.offsetHeight * scale;
+
+    let x, y, tries = 0;
+
+    do {
+      x = Math.random() * maxX;
+      y = Math.random() * maxY;
+      tries++;
+    } while (isOverlapping(x, y) && tries < 100);
+
+    noButton.style.left = x + "px";
+    noButton.style.top = y + "px";
+  }
+
+  noButton.addEventListener("mouseenter", moveButton);
+  noButton.addEventListener("touchstart", moveButton);
+
+  yesButton.addEventListener("click", () => {
     window.location.href = "evidement.html";
+  });
+
+  noButton.addEventListener("click", () => {
+    window.location.href = "Certes.html";
   });
 </script>
 
