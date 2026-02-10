@@ -110,7 +110,7 @@
       min-height: 20px;
     }
     .hint.warning {
-      color: #ff9800;
+      color: #401cff;
       animation: blink 0.5s ease-in-out infinite;
     }
     @keyframes blink {
@@ -213,7 +213,7 @@
     // À 13 tentatives : afficher l'avertissement
     if (escapeCount === 13 && !warningShown) {
       warningShown = true;
-      hint.textContent = "Tu force le bouton se fatigue...";
+      hint.textContent = "Tu force, le bouton se fatigue...";
       hint.classList.add("warning");
     }
     
