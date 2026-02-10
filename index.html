@@ -82,17 +82,25 @@
       z-index: 1;
       transition: none;
     }
-    /* Indicateur de pause - plus visible */
-    #no.paused {
+    /* Bouton tremblant pendant la pause */
+    #no.shaking {
       border: 3px solid #4CAF50 !important;
       background: #e8f5e9 !important;
-      animation: pulse 0.6s ease-in-out infinite;
       cursor: pointer !important;
       pointer-events: auto !important;
+      animation: shake 0.3s ease-in-out infinite;
     }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-      50% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      10% { transform: translate(-2px, -1px) rotate(-1deg); }
+      20% { transform: translate(2px, 1px) rotate(1deg); }
+      30% { transform: translate(-2px, 1px) rotate(0deg); }
+      40% { transform: translate(2px, -1px) rotate(1deg); }
+      50% { transform: translate(-2px, -1px) rotate(-1deg); }
+      60% { transform: translate(2px, 1px) rotate(0deg); }
+      70% { transform: translate(-2px, 1px) rotate(-1deg); }
+      80% { transform: translate(2px, -1px) rotate(1deg); }
+      90% { transform: translate(-2px, 1px) rotate(0deg); }
     }
     .hint {
       margin-top: 20px;
@@ -100,6 +108,14 @@
       color: #4CAF50;
       font-weight: bold;
       min-height: 20px;
+    }
+    .hint.warning {
+      color: #ff9800;
+      animation: blink 0.5s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
 
     @media (max-width: 768px) {
@@ -155,6 +171,7 @@
   let scale = 1;
   let fleeing = false;
   let isPaused = false;
+  let warningShown = false;
 
   function isOverlapping(x, y) {
     const noW = noButton.offsetWidth * scale;
@@ -181,20 +198,8 @@
     );
   }
 
-  function startPause(duration, message) {
-    isPaused = true;
-    noButton.classList.add("paused");
-    hint.textContent = message;
-    
-    setTimeout(() => {
-      isPaused = false;
-      noButton.classList.remove("paused");
-      hint.textContent = "";
-    }, duration);
-  }
-
   function moveButton(e) {
-    // Si en pause, ne rien faire du tout
+    // Si en pause, ne rien faire
     if (isPaused) {
       return;
     }
@@ -205,25 +210,30 @@
     
     escapeCount++;
     
-    // Après 15 tentatives, pause de 3 secondes
+    // À 13 tentatives : afficher l'avertissement
+    if (escapeCount === 13 && !warningShown) {
+      warningShown = true;
+      hint.textContent = "⚠️ Attention... Le bouton se fatigue...";
+      hint.classList.add("warning");
+    }
+    
+    // À 15 tentatives : PAUSE de 3 secondes avec bouton tremblant
     if (escapeCount === 15) {
-      startPause(3000, "🎯 Pause ! Tu as 3 secondes !");
-      return;
-    }
-    
-    // Après 25 tentatives, pause de 5 secondes
-    if (escapeCount === 25) {
-      startPause(5000, "😅 OK OK, 5 secondes pour cliquer !");
-      return;
-    }
-    
-    // Après 35 tentatives, pause de 8 secondes
-    if (escapeCount === 35) {
-      startPause(8000, "🏆 Bravo pour ta persévérance ! 8 secondes !");
+      isPaused = true;
+      hint.classList.remove("warning");
+      hint.textContent = "🎯 MAINTENANT ! 3 secondes pour cliquer !";
+      noButton.classList.add("shaking");
+      
+      setTimeout(() => {
+        isPaused = false;
+        noButton.classList.remove("shaking");
+        hint.textContent = "";
+      }, 3000); // 3 secondes de pause
+      
       return;
     }
 
-    // Mouvement immédiat (pas de délai)
+    // Mouvement immédiat
     if (!fleeing) {
       fleeing = true;
       noButton.classList.add("flee");
@@ -261,11 +271,9 @@
 
   // Bouton NON - gestion du clic
   noButton.addEventListener("click", (e) => {
-    // Si on est en pause, permettre le clic
     if (isPaused) {
       window.location.href = "Certes.html";
     } else {
-      // Sinon, empêcher le clic
       e.preventDefault();
       e.stopPropagation();
     }
