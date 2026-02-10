@@ -2,9 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Refus refusé</title>
-
   <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
     body {
       margin: 0;
       height: 100vh;
@@ -12,31 +16,31 @@
       font-family: Arial, sans-serif;
       overflow: hidden;
       position: relative;
+      touch-action: none; /* Empêche le scroll sur mobile */
     }
-
     .content {
       position: absolute;
-      top: 20%;
+      top: 15%;
       width: 100%;
       text-align: center;
+      padding: 0 20px;
     }
-
     h1 {
       font-size: 48px;
       margin-bottom: 12px;
+      line-height: 1.2;
     }
-
     h2 {
       font-size: 26px;
       margin-bottom: 40px;
+      line-height: 1.3;
     }
-
     #yes {
       position: absolute;
       top: 60%;
       left: 50%;
       transform: translate(-50%, -50%);
-      padding: 14px 26px;
+      padding: 16px 30px;
       font-size: 16px;
       border-radius: 8px;
       border: none;
@@ -44,8 +48,14 @@
       color: white;
       cursor: pointer;
       pointer-events: auto;
+      white-space: nowrap;
+      font-weight: 500;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: background 0.2s;
     }
-
+    #yes:active {
+      background: #7373c9;
+    }
     .arrow {
       position: absolute;
       top: 70%;
@@ -53,66 +63,177 @@
       transform: translateX(-50%);
       width: 80px;
     }
+    .instruction {
+      position: absolute;
+      bottom: 30px;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      color: #15345f;
+      opacity: 0.7;
+      padding: 0 20px;
+    }
+
+    /* === RESPONSIVE MOBILE === */
+    @media (max-width: 768px) {
+      .content {
+        top: 12%;
+      }
+      h1 {
+        font-size: 32px;
+      }
+      h2 {
+        font-size: 20px;
+        margin-bottom: 30px;
+      }
+      #yes {
+        padding: 14px 24px;
+        font-size: 15px;
+      }
+      .arrow {
+        width: 60px;
+        top: 65%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .content {
+        top: 10%;
+      }
+      h1 {
+        font-size: 26px;
+      }
+      h2 {
+        font-size: 18px;
+        margin-bottom: 25px;
+      }
+      #yes {
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+      .arrow {
+        width: 50px;
+        top: 62%;
+      }
+      .instruction {
+        font-size: 12px;
+        bottom: 20px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      h1 {
+        font-size: 22px;
+      }
+      h2 {
+        font-size: 16px;
+      }
+      #yes {
+        padding: 11px 18px;
+        font-size: 13px;
+      }
+    }
+
+    /* Orientation paysage sur mobile */
+    @media (max-height: 500px) {
+      .content {
+        top: 5%;
+      }
+      h1 {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+      h2 {
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+      #yes {
+        top: 55%;
+      }
+      .arrow {
+        top: 70%;
+        width: 40px;
+      }
+      .instruction {
+        display: none;
+      }
+    }
   </style>
 </head>
-
 <body>
-
   <div class="content">
-    <h1>C’était sûr que t’essaierais</h1>
-    <h2>Mais c’est refuser.</h2>
+    <h1>C'était sûr que t'essaierais</h1>
+    <h2>Mais c'est refusé.</h2>
   </div>
-
-  <button id="yes">J’accepte de mon plein grès</button>
-
+  <button id="yes">J'accepte de mon plein gré</button>
   <!-- vraie flèche -->
   <svg class="arrow" viewBox="0 0 100 140">
     <line x1="50" y1="40" x2="50" y2="140" stroke="#15345f" stroke-width="10"/>
     <polygon points="20,40 80,40 50,0" fill="#15345f"/>
   </svg>
-
+  <div class="instruction">💡 Déplace ton doigt sur l'écran pour attraper le bouton</div>
 <script>
   const button = document.getElementById("yes");
-
   let btnX = window.innerWidth / 2;
   let btnY = window.innerHeight * 0.6;
-
   let mouseX = btnX;
   let mouseY = btnY;
-
   let follow = false;
+  let isMobile = 'ontouchstart' in window;
 
   button.style.left = btnX + "px";
   button.style.top = btnY + "px";
   button.style.transform = "translate(-50%, -50%)";
 
+  // Démarrage du suivi après 3 secondes
   setTimeout(() => {
     follow = true;
   }, 3000);
 
+  // Gestion souris (desktop)
   document.addEventListener("mousemove", (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
   });
+
+  // Gestion tactile (mobile)
+  document.addEventListener("touchmove", (e) => {
+    e.preventDefault(); // Empêche le scroll
+    if (e.touches.length > 0) {
+      mouseX = e.touches[0].clientX;
+      mouseY = e.touches[0].clientY;
+    }
+  }, { passive: false });
+
+  // Pour mobile : capturer aussi la position du premier touch
+  document.addEventListener("touchstart", (e) => {
+    if (e.touches.length > 0) {
+      mouseX = e.touches[0].clientX;
+      mouseY = e.touches[0].clientY;
+    }
+  }, { passive: true });
 
   function animate() {
     if (follow) {
       const speed = 0.08;
       btnX += (mouseX - btnX) * speed;
       btnY += (mouseY - btnY) * speed;
-
       button.style.left = btnX + "px";
       button.style.top = btnY + "px";
     }
     requestAnimationFrame(animate);
   }
-
   animate();
 
   button.addEventListener("click", () => {
     window.location.href = "evidement.html";
   });
-</script>
 
+  // Gestion du tap sur mobile
+  button.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    window.location.href = "evidement.html";
+  }, { passive: false });
+</script>
 </body>
 </html>
