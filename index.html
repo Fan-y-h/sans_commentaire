@@ -2,122 +2,211 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sans commentaire</title>
-
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       background: linear-gradient(135deg, #f0dbff, #dfb7ff);
       font-family: Arial, sans-serif;
+      padding: 20px;
     }
-
     /* === CARTE = CADRE DE JEU === */
     .card {
       position: relative;
       background: white;
-      padding: 90px;
-      width: 400px;
+      padding: 60px 40px;
+      width: 100%;
+      max-width: 500px;
+      min-height: 400px;
       border-radius: 20px;
       text-align: center;
       box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      overflow: hidden; /* interdit toute fuite hors du cadre */
+      overflow: hidden;
     }
-
     h1 {
       color: #6b10d0;
-      font-size: 22px;
+      font-size: 24px;
+      margin-bottom: 15px;
     }
-
     p {
       margin: 12px 0;
+      font-size: 16px;
     }
-
+    p strong {
+      font-size: 20px;
+      color: #6b10d0;
+    }
     /* === ZONE BOUTONS === */
     .buttons {
       margin-top: 40px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 25px;
+      gap: 20px;
     }
-
     button {
-      padding: 12px 24px;
+      padding: 15px 30px;
       font-size: 16px;
       border-radius: 25px;
       border: none;
       cursor: pointer;
       transition: transform 0.15s ease;
+      min-width: 200px;
+      touch-action: manipulation; /* Améliore le touch sur mobile */
     }
-
     #yes {
       background: #6b10d0;
       color: white;
       z-index: 2;
+      font-weight: bold;
     }
-
+    #yes:hover {
+      background: #5a0db0;
+      transform: scale(1.05);
+    }
     /* === BOUTON NON : ÉTAT NORMAL === */
     #no {
       background: white;
       color: #ff4d88;
       border: 2px dashed #ff4d88;
+      font-weight: 500;
     }
-
     /* === ÉTAT FUITE === */
     #no.flee {
       position: absolute;
       z-index: 1;
+      transition: none;
+    }
+
+    /* === RESPONSIVE MOBILE === */
+    @media (max-width: 768px) {
+      .card {
+        padding: 50px 30px;
+        min-height: 450px;
+        border-radius: 15px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      p {
+        font-size: 15px;
+      }
+      p strong {
+        font-size: 18px;
+      }
+      button {
+        padding: 14px 25px;
+        font-size: 15px;
+        min-width: 180px;
+      }
+      .buttons {
+        gap: 18px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 15px;
+      }
+      .card {
+        padding: 40px 25px;
+        min-height: 420px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      p {
+        font-size: 14px;
+      }
+      p strong {
+        font-size: 17px;
+      }
+      button {
+        padding: 12px 20px;
+        font-size: 14px;
+        min-width: 160px;
+      }
+      .buttons {
+        margin-top: 35px;
+        gap: 15px;
+      }
+    }
+
+    /* Pour les très petits écrans */
+    @media (max-width: 360px) {
+      .card {
+        padding: 35px 20px;
+        min-height: 380px;
+      }
+      h1 {
+        font-size: 18px;
+      }
+      button {
+        min-width: 140px;
+        padding: 11px 18px;
+      }
     }
   </style>
 </head>
-
 <body>
-
   <div class="card" id="container">
     <h1>OK ma belle,</h1>
-    <p>J’ai une question primordiale</p>
+    <p>J'ai une question primordiale</p>
     <p><strong>Un date ?</strong></p>
-
     <div class="buttons">
       <button id="yes">Comment résister... 💕</button>
       <button id="no">Nop :D</button>
     </div>
   </div>
-
 <script>
   const noButton = document.getElementById("no");
   const yesButton = document.getElementById("yes");
   const container = document.getElementById("container");
-
   let escapeCount = 0;
   let scale = 1;
   let fleeing = false;
+  
+  // Empêcher le zoom sur double-tap mobile
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
 
   function isOverlapping(x, y) {
     const noW = noButton.offsetWidth * scale;
     const noH = noButton.offsetHeight * scale;
-
     const noRect = {
       left: x,
       right: x + noW,
       top: y,
       bottom: y + noH
     };
-
     const yesRect = yesButton.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-
     const yes = {
       left: yesRect.left - containerRect.left,
       right: yesRect.right - containerRect.left,
       top: yesRect.top - containerRect.top,
       bottom: yesRect.bottom - containerRect.top
     };
-
     return !(
       noRect.right < yes.left ||
       noRect.left > yes.right ||
@@ -126,24 +215,28 @@
     );
   }
 
-  function moveButton() {
+  function moveButton(e) {
+    // Empêcher le comportement par défaut sur mobile
+    if (e.type === 'touchstart') {
+      e.preventDefault();
+    }
+    
     if (!fleeing) {
       fleeing = true;
       noButton.classList.add("flee");
     }
-
     escapeCount++;
-
+    
+    // Réduction plus progressive sur mobile
     if (escapeCount >= 5) {
-      scale = Math.max(0.4, scale - 0.1);
+      scale = Math.max(0.5, scale - 0.08);
       noButton.style.transform = `scale(${scale})`;
     }
 
     const maxX = container.clientWidth - noButton.offsetWidth * scale;
     const maxY = container.clientHeight - noButton.offsetHeight * scale;
-
     let x, y, tries = 0;
-
+    
     do {
       x = Math.random() * maxX;
       y = Math.random() * maxY;
@@ -154,17 +247,20 @@
     noButton.style.top = y + "px";
   }
 
+  // Gestion des événements desktop
   noButton.addEventListener("mouseenter", moveButton);
-  noButton.addEventListener("touchstart", moveButton);
+  
+  // Gestion des événements mobile
+  noButton.addEventListener("touchstart", moveButton, { passive: false });
 
   yesButton.addEventListener("click", () => {
     window.location.href = "evidement.html";
   });
 
-  noButton.addEventListener("click", () => {
+  noButton.addEventListener("click", (e) => {
+    e.preventDefault();
     window.location.href = "Certes.html";
   });
 </script>
-
 </body>
 </html>
