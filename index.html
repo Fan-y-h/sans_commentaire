@@ -1,3 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sans commentaire</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #f0dbff, #dfb7ff);
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .card {
+      position: relative;
+      background: white;
+      padding: 60px 40px;
+      width: 100%;
+      max-width: 500px;
+      min-height: 400px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    h1 {
+      color: #6b10d0;
+      font-size: 24px;
+      margin-bottom: 15px;
+    }
+    p {
+      margin: 12px 0;
+      font-size: 16px;
+    }
+    p strong {
+      font-size: 20px;
+      color: #6b10d0;
+    }
+    .buttons {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 25px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+      min-width: 200px;
+      touch-action: manipulation;
+    }
+    #yes {
+      background: #6b10d0;
+      color: white;
+      z-index: 2;
+      font-weight: bold;
+    }
+    #yes:hover {
+      background: #5a0db0;
+      transform: scale(1.05);
+    }
+    #no {
+      background: white;
+      color: #ff4d88;
+      border: 2px dashed #ff4d88;
+      font-weight: 500;
+    }
+    #no.flee {
+      position: absolute;
+      z-index: 1;
+      transition: none;
+    }
+    /* Indicateur de pause */
+    #no.paused {
+      border: 2px solid #ff4d88;
+      animation: pulse 0.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .hint {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #999;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        padding: 50px 30px;
+        min-height: 450px;
+      }
+      h1 { font-size: 22px; }
+      p { font-size: 15px; }
+      p strong { font-size: 18px; }
+      button {
+        padding: 14px 25px;
+        font-size: 15px;
+        min-width: 180px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 40px 25px;
+        min-height: 420px;
+      }
+      h1 { font-size: 20px; }
+      p { font-size: 14px; }
+      p strong { font-size: 17px; }
+      button {
+        padding: 12px 20px;
+        font-size: 14px;
+        min-width: 160px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="container">
+    <h1>OK ma belle,</h1>
+    <p>J'ai une question primordiale</p>
+    <p><strong>Un date ?</strong></p>
+    <div class="buttons">
+      <button id="yes">Comment résister... 💕</button>
+      <button id="no">Nop :D</button>
+    </div>
+    <p class="hint" id="hint"></p>
+  </div>
 <script>
   const noButton = document.getElementById("no");
   const yesButton = document.getElementById("yes");
@@ -7,7 +148,8 @@
   let escapeCount = 0;
   let scale = 1;
   let fleeing = false;
-  let safeZone = false;
+  let isPaused = false;
+  let moveTimeout;
 
   function isOverlapping(x, y) {
     const noW = noButton.offsetWidth * scale;
@@ -35,56 +177,71 @@
   }
 
   function moveButton(e) {
+    // Si le bouton est en pause, ne pas bouger
+    if (isPaused) return;
+    
     if (e.type === 'touchstart') {
       e.preventDefault();
     }
     
     escapeCount++;
     
-    // Après 20 tentatives : zone de sécurité en bas à droite
-    if (escapeCount === 20) {
-      safeZone = true;
-      hint.textContent = "💡 Indice : cherche dans le coin en bas à droite...";
+    // Après 15 tentatives, pause de 3 secondes
+    if (escapeCount === 15) {
+      isPaused = true;
+      noButton.classList.add("paused");
+      hint.textContent = "🎯 Le bouton est fatigué... 3 secondes de répit !";
       
-      // Positionner dans le coin
-      const maxX = container.clientWidth - noButton.offsetWidth * scale;
-      const maxY = container.clientHeight - noButton.offsetHeight * scale;
+      setTimeout(() => {
+        isPaused = false;
+        noButton.classList.remove("paused");
+        hint.textContent = "";
+      }, 3000);
+      return;
+    }
+    
+    // Après 25 tentatives, pause plus longue
+    if (escapeCount === 25) {
+      isPaused = true;
+      noButton.classList.add("paused");
+      hint.textContent = "😅 OK OK, 5 secondes pour essayer !";
       
+      setTimeout(() => {
+        isPaused = false;
+        noButton.classList.remove("paused");
+        hint.textContent = "";
+      }, 5000);
+      return;
+    }
+
+    // Délai avant de bouger (augmente avec les tentatives)
+    const delay = Math.min(escapeCount * 10, 200);
+    
+    clearTimeout(moveTimeout);
+    moveTimeout = setTimeout(() => {
       if (!fleeing) {
         fleeing = true;
         noButton.classList.add("flee");
       }
+
+      if (escapeCount >= 5) {
+        scale = Math.max(0.5, scale - 0.08);
+        noButton.style.transform = `scale(${scale})`;
+      }
+
+      const maxX = container.clientWidth - noButton.offsetWidth * scale;
+      const maxY = container.clientHeight - noButton.offsetHeight * scale;
+      let x, y, tries = 0;
       
-      noButton.style.left = (maxX - 20) + "px";
-      noButton.style.top = (maxY - 20) + "px";
-      return;
-    }
-    
-    // En zone de sécurité, ne plus bouger
-    if (safeZone) return;
-    
-    if (!fleeing) {
-      fleeing = true;
-      noButton.classList.add("flee");
-    }
+      do {
+        x = Math.random() * maxX;
+        y = Math.random() * maxY;
+        tries++;
+      } while (isOverlapping(x, y) && tries < 100);
 
-    if (escapeCount >= 5) {
-      scale = Math.max(0.5, scale - 0.08);
-      noButton.style.transform = `scale(${scale})`;
-    }
-
-    const maxX = container.clientWidth - noButton.offsetWidth * scale;
-    const maxY = container.clientHeight - noButton.offsetHeight * scale;
-    let x, y, tries = 0;
-    
-    do {
-      x = Math.random() * maxX;
-      y = Math.random() * maxY;
-      tries++;
-    } while (isOverlapping(x, y) && tries < 100);
-
-    noButton.style.left = x + "px";
-    noButton.style.top = y + "px";
+      noButton.style.left = x + "px";
+      noButton.style.top = y + "px";
+    }, delay);
   }
 
   noButton.addEventListener("mouseenter", moveButton);
@@ -95,10 +252,13 @@
   });
 
   noButton.addEventListener("click", (e) => {
-    if (!safeZone) {
+    if (!isPaused) {
       e.preventDefault();
     } else {
+      // Si cliqué pendant la pause, rediriger
       window.location.href = "Certes.html";
     }
   });
 </script>
+</body>
+</html>
